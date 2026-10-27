@@ -1,0 +1,26 @@
+# Core dependencies
+pyyaml>=6.0.3
+requests>=2.34.2
+typer>=0.27.2
+rich>=15.0.0
+openai>=3.11.0
+prompt-toolkit>=3.0.48
+
+# MCP SDK (latest version)
+mcp>=2.2.0
+httpx>=0.28.1
+
+# Memory / Vector Search
+qdrant-client>=1.19.0
+
+# Observability
+prometheus-client>=0.26.0
+
+# Docs
+mkdocs>=1.6.1
+mkdocs-carbon>=2.1.0
+pymdown-extensions>=10.0
+
+# Testing
+pytest>=9.1.1
+pytest-asyncio>=1.4.0

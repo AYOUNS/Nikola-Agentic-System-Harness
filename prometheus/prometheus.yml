@@ -1,0 +1,30 @@
+# Prometheus scrape configuration for the agent's /metrics endpoint.
+# Mounted into the prometheus service in compose.yaml.
+
+global:
+  scrape_interval: 5s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: agent
+    metrics_path: /metrics
+    static_configs:
+      # These two targets are ALTERNATIVES, not a pair — scraping both at once
+      # double-counts. The agent container publishes 9464 on the host, so when it
+      # is running `host.docker.internal:9464` reaches the very same process as
+      # `agent:9464`, and every `sum by (...)` over a counter returns twice the
+      # real value under two different `instance` labels.
+      #
+      # Default: the containerized agent (`docker compose run agent`).
+      - targets:
+          - agent:9464
+
+      # Swap to this one for `python -m agent.cli` running directly on the host,
+      # and comment out the `agent:9464` target above.
+      # - targets:
+      #     - host.docker.internal:9464
+
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          - localhost:9090

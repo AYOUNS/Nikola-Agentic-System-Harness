@@ -1,0 +1,88 @@
+# permissions.yaml — Agent tool permission rules
+#
+# Copy this file to permissions.yaml in the project root (next to config.yaml)
+# or to ~/.nikola/permissions.yaml for user-wide defaults.
+#
+# The agent searches these locations in order:
+#   1. ./permissions.yaml  (project root — highest priority)
+#   2. ~/.nikola/permissions.yaml
+#
+# Format
+# ------
+# default: allow | deny | ask
+#   Action taken when no rule matches.
+#
+# rules:
+#   Evaluated top-to-bottom; the FIRST matching rule wins.
+#   Each rule has:
+#     tool:         Tool name or glob pattern (e.g. "write_*", "mcp_*")
+#     action:       allow | deny | ask
+#     path_pattern: (optional) Glob matched against the tool's 'path' argument.
+#                   Only meaningful for filesystem tools.
+
+default: ask
+
+rules:
+  # --- Read-only tools: always allow ---
+  - tool: read_file
+    action: allow
+
+  - tool: list_files
+    action: allow
+
+  - tool: search_text
+    action: allow
+
+  - tool: glob
+    action: allow
+
+  - tool: grep
+    action: allow
+
+  - tool: search_memory
+    action: allow
+
+  # --- Sensitive files: always deny writes ---
+  - tool: write_file
+    path_pattern: "*.env"
+    action: deny
+
+  - tool: write_file
+    path_pattern: ".env*"
+    action: deny
+
+  - tool: write_file
+    path_pattern: "*secret*"
+    action: deny
+
+  - tool: modify_file
+    path_pattern: "*.env"
+    action: deny
+
+  # --- Write tools: ask for confirmation ---
+  - tool: write_file
+    action: ask
+
+  - tool: create_file
+    action: ask
+
+  - tool: modify_file
+    action: ask
+
+  - tool: create_folder
+    action: ask
+
+  - tool: remember
+    action: ask
+
+  # --- Dangerous tools: always deny ---
+  - tool: execute_command
+    action: deny
+
+  # Sub-agents cannot spawn sub-agents
+  - tool: delegate
+    action: deny
+
+  # --- MCP calendar tools: allow (safe, reversible) ---
+  - tool: "mcp_calendar__*"
+    action: allow

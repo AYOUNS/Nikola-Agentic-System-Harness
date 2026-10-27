@@ -1,0 +1,24 @@
+---
+description: Example user rule (rename to .md to enable)
+enabled: false
+---
+
+# Example Rule
+
+This is an example of a user rule. Rules are persistent instructions that
+apply on top of your Agent Mode prompt.
+
+## How to Use Rules
+
+1. Copy this file and rename it (remove `.example` extension)
+2. Edit the content to add your instructions
+3. Rules are loaded in alphabetical order by filename
+4. Prefix with numbers for explicit ordering: `01-first.md`, `02-second.md`
+
+## Example Rule Content
+
+Always use type hints in Python function signatures.
+
+Prefer dataclasses over plain classes when appropriate.
+
+When writing tests, use descriptive test names that explain the behavior.

@@ -1,0 +1,16 @@
+# MCP SDK. The 2.x server API differs from 1.x, so cap the major version.
+mcp>=2.2.0,<3
+
+# ASGI app and server for the SSE transport and health endpoint.
+# Both ship with mcp; pinned here because server.py imports them directly.
+starlette>=0.27
+uvicorn>=0.31.1
+
+# Calendar parsing and manipulation
+icalendar>=5.0.0
+
+# Async file I/O
+aiofiles>=23.0.0
+
+# Date/time utilities
+python-dateutil>=2.8.0

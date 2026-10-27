@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 430 120" width="430" height="120" font-family="Inter, 'Helvetica Neue', Arial, sans-serif">
+  <title>nikola — horizontal lockup</title>
+  <g transform="translate(6,12)" fill="none" stroke-linecap="round">
+    <path d="M8,22 C32,22 44,39 64,41 L94,41" stroke="#212529" stroke-width="5"/>
+    <path d="M8,50 L94,50" stroke="#1971c2" stroke-width="7"/>
+    <path d="M8,78 C32,78 44,62 64,60 L94,60" stroke="#2f9e44" stroke-width="9"/>
+  </g>
+  <text x="122" y="72" font-size="52" font-weight="700" fill="#111" letter-spacing="-1">nikola</text>
+  <text x="124" y="96" font-size="13" fill="#868e96" letter-spacing="2.4">AGENT HARNESS</text>
+</svg>

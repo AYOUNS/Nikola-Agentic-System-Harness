@@ -1,0 +1,261 @@
+/*
+ * Carbon Design System tokens — Light theme (white / g10)
+ * Maps Carbon colour tokens to the site's CSS custom properties.
+ * IBM Plex fonts are bundled inside mkdocs-carbon.
+ * Reference: https://carbondesignsystem.com/elements/color/tokens/
+ */
+
+/* ── IBM Carbon colour tokens ─────────────────────────────────────────────── */
+:root {
+  /* Blue */
+  --carbon-blue-10: #edf5ff;
+  --carbon-blue-20: #d0e2ff;
+  --carbon-blue-40: #78a9ff;
+  --carbon-blue-60: #0043ce;
+  --carbon-blue-70: #0035b5;
+
+  /* Gray */
+  --carbon-gray-10: #f4f4f4;
+  --carbon-gray-20: #e0e0e0;
+  --carbon-gray-30: #c6c6c6;
+  --carbon-gray-50: #8d8d8d;
+  --carbon-gray-70: #525252;
+  --carbon-gray-90: #262626;
+  --carbon-gray-100: #161616;
+
+  /* Interactive */
+  --carbon-interactive: #0f62fe;   /* Carbon Blue-60 interactive */
+  --carbon-teal-60: #007d79;
+  --carbon-green-50: #24a148;
+  --carbon-red-60: #da1e28;
+}
+
+/* ── Light theme overrides ────────────────────────────────────────────────── */
+:root,
+[data-carbon-theme="white"],
+[data-carbon-theme="g10"] {
+  --link-color: var(--carbon-interactive);
+  --link-hover-color: var(--carbon-blue-70);
+  --text-primary: var(--carbon-gray-100);
+  --text-secondary: var(--carbon-gray-70);
+  --background: #ffffff;
+  --layer-01: var(--carbon-gray-10);
+  --border-subtle: var(--carbon-gray-20);
+}
+
+/* ── Tables — Carbon header style ─────────────────────────────────────────── */
+table thead th {
+  background-color: var(--carbon-interactive) !important;
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+table tbody tr:nth-child(even) {
+  background-color: var(--carbon-gray-10);
+}
+
+/* ── Code blocks ──────────────────────────────────────────────────────────── */
+pre, code {
+  border-radius: 2px;
+}
+
+/* ── Admonitions — flat Carbon left-border style ──────────────────────────── */
+.admonition,
+details {
+  border-radius: 0 !important;
+  border-left-width: 3px !important;
+}
+
+
+/* ── Sidebar scroll fix ────────────────────────────────────────────────────── */
+/*
+ * Long nav lists were clipped with no way to reach the bottom entries. The
+ * symptom only showed on content pages: mkdocs-carbon marks the current
+ * section's group `active expanded`, so on e.g. Concepts → Skills the nine
+ * Concepts items unfold and the list outgrows the viewport. On the home page
+ * no group is expanded, the list fits, and nothing looks wrong.
+ *
+ * Carbon's intended scroller is the slotted `cds-side-nav-items`: its own
+ * `:host` styles give it `flex: 1 1 0%` inside the nav's column flex box, so
+ * it is already constrained to the fixed nav's `calc(100vh - 3rem)` — but also
+ * `overflow: hidden`. Of the four rules that should lift that, three place
+ * `:host()` in descendant position (`.cds--side-nav--ux :host(…)`), where it
+ * can never match, and the one working rule is scoped to the host's `expanded`
+ * attribute — which the theme does not set: the template emits a bare
+ * `<cds-side-nav aria-label="Side navigation">`. So nothing enables scrolling.
+ *
+ * Setting `expanded` from here would work only until the nav lost focus
+ * (`_handleFocusOut` clears it outside collapse-mode="fixed"), so the overflow
+ * is set directly instead: `cds-side-nav-items` lives in the light DOM, where
+ * a document-level rule reaches it and outranks the component's `:host` styles.
+ *
+ * Overriding its height is what defeated the previous attempt — `flex: 1 1 0%`
+ * has to keep sizing the box to the nav, or there is no overflow left to
+ * scroll. The wrapper and host rules it also carried were inert: the real nav
+ * is `position: fixed` inside the component's shadow root, so the light-DOM
+ * `.md-sidebar__*` boxes only reserve the 256px column.
+ * Verified against Carbon web components v2.15.0 (ui-shell.min.js).
+ */
+cds-side-nav-items {
+  overflow-y: auto !important;
+}
+
+
+/* ── Buttons — Carbon primary / tertiary ──────────────────────────────────── */
+/*
+ * `.md-button` is a Material class; mkdocs-carbon ships no rule for it, so the
+ * landing-page call-to-action links would render as plain text links. These map
+ * the two variants onto Carbon's primary and tertiary button styles.
+ *
+ * `:link` / `:visited` are named on both colour rules on purpose: theme.css has
+ * `a:visited { color: var(--link-color) }`, whose (0,1,1) specificity outranks a
+ * bare `.md-button--primary` (0,1,0). Without them the primary button's label
+ * turns Carbon blue on Carbon blue — invisible — as soon as it has been visited.
+ * Reference: https://carbondesignsystem.com/components/button/style/
+ */
+.md-button,
+.md-button:link,
+.md-button:visited {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  margin: 0 0.5rem 0.5rem 0;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--carbon-interactive);
+  border-radius: 0;
+  color: var(--carbon-interactive);
+  font-size: 0.875rem;
+  font-weight: 400;
+  letter-spacing: 0.16px;
+  text-decoration: none;
+  transition: background-color 70ms cubic-bezier(0, 0, 0.38, 0.9),
+              color 70ms cubic-bezier(0, 0, 0.38, 0.9);
+}
+
+.md-button:hover {
+  background-color: var(--carbon-blue-10);
+  color: var(--carbon-blue-70);
+  text-decoration: none;
+}
+
+.md-button--primary,
+.md-button--primary:link,
+.md-button--primary:visited {
+  background-color: var(--carbon-interactive) !important;
+  color: #ffffff !important;
+}
+
+.md-button--primary:hover {
+  background-color: var(--carbon-blue-60) !important;
+  color: #ffffff !important;
+}
+
+.md-button:focus-visible {
+  outline: 2px solid var(--carbon-interactive);
+  outline-offset: -4px;
+}
+
+/* ── Mermaid diagrams ─────────────────────────────────────────────────────── */
+/*
+ * superfences emits <div class="mermaid"> (fence_div_format) so the theme's
+ * hljs.highlightAll() leaves diagram source alone. Centre the rendered SVG and
+ * let wide flowcharts scroll rather than overflow the content column.
+ */
+.mermaid {
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  text-align: center;
+}
+
+/* ── Tabbed content — `pymdownx.tabbed` (alternate style) ─────────────────── */
+/*
+ * Another Material-only component with no mkdocs-carbon styling: without these
+ * rules the tab set renders as bare radio buttons with run-together labels
+ * ("DockerPodman") and every panel stacked. The alternate style is pure CSS —
+ * the radios stay in the DOM (and focusable) and sibling selectors below map
+ * the checked input to its label and block. Styled after Carbon's tabs.
+ * Reference: https://carbondesignsystem.com/components/tabs/style/
+ */
+.tabbed-set {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  margin: 1.5rem 0;
+}
+
+/* Visually hidden, still reachable by keyboard. */
+.tabbed-set > input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.tabbed-labels {
+  display: flex;
+  width: 100%;
+  overflow-x: auto;
+  box-shadow: inset 0 -1px var(--border-subtle, #e0e0e0);
+}
+
+.tabbed-labels > label {
+  padding: 0.75rem 1rem;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary, #525252);
+  font-size: 0.875rem;
+  line-height: 1.29;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 70ms cubic-bezier(0, 0, 0.38, 0.9),
+              border-color 70ms cubic-bezier(0, 0, 0.38, 0.9);
+}
+
+.tabbed-labels > label:hover {
+  color: var(--carbon-interactive);
+}
+
+.tabbed-content {
+  width: 100%;
+}
+
+.tabbed-block {
+  display: none;
+}
+
+.tabbed-block > :first-child {
+  margin-top: 1rem;
+}
+
+/* Selected tab: Carbon blue label + 2px underline. */
+.tabbed-set > input:nth-child(1):checked ~ .tabbed-labels > :nth-child(1),
+.tabbed-set > input:nth-child(2):checked ~ .tabbed-labels > :nth-child(2),
+.tabbed-set > input:nth-child(3):checked ~ .tabbed-labels > :nth-child(3),
+.tabbed-set > input:nth-child(4):checked ~ .tabbed-labels > :nth-child(4),
+.tabbed-set > input:nth-child(5):checked ~ .tabbed-labels > :nth-child(5),
+.tabbed-set > input:nth-child(6):checked ~ .tabbed-labels > :nth-child(6) {
+  border-bottom-color: var(--carbon-interactive);
+  color: var(--carbon-interactive);
+  font-weight: 600;
+}
+
+/* Keyboard focus ring — the radio itself is visually hidden. */
+.tabbed-set > input:nth-child(1):focus-visible ~ .tabbed-labels > :nth-child(1),
+.tabbed-set > input:nth-child(2):focus-visible ~ .tabbed-labels > :nth-child(2),
+.tabbed-set > input:nth-child(3):focus-visible ~ .tabbed-labels > :nth-child(3),
+.tabbed-set > input:nth-child(4):focus-visible ~ .tabbed-labels > :nth-child(4),
+.tabbed-set > input:nth-child(5):focus-visible ~ .tabbed-labels > :nth-child(5),
+.tabbed-set > input:nth-child(6):focus-visible ~ .tabbed-labels > :nth-child(6) {
+  outline: 2px solid var(--carbon-interactive);
+  outline-offset: -2px;
+}
+
+/* Show only the block belonging to the checked tab. */
+.tabbed-set > input:nth-child(1):checked ~ .tabbed-content > :nth-child(1),
+.tabbed-set > input:nth-child(2):checked ~ .tabbed-content > :nth-child(2),
+.tabbed-set > input:nth-child(3):checked ~ .tabbed-content > :nth-child(3),
+.tabbed-set > input:nth-child(4):checked ~ .tabbed-content > :nth-child(4),
+.tabbed-set > input:nth-child(5):checked ~ .tabbed-content > :nth-child(5),
+.tabbed-set > input:nth-child(6):checked ~ .tabbed-content > :nth-child(6) {
+  display: block;
+}

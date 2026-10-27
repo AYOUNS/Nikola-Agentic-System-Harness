@@ -1,0 +1,7 @@
+# mitmproxy configuration file
+# Loaded by mitmproxy via default config path /home/mitmproxy/.mitmproxy/config.yaml or --set confdir
+
+scripts:
+  - /home/mitmproxy/addons/sse_streaming_har.py
+
+web_open_browser: false

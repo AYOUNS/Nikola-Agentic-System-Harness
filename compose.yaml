@@ -1,0 +1,233 @@
+services:
+  workspace_init:
+    # The agent runs as UID 1001 (Containerfile) while ./workspace is owned by the host
+    # user, and rootless Podman does not remap one to the other. Without -R only the mount
+    # point itself becomes writable: pre-existing subdirectories such as .nikola/logs keep
+    # their 755 host permissions, and the agent cannot write agent.jsonl into them.
+    image: busybox:latest
+    command: ["chmod", "-R", "777", "/workspace"]
+    volumes:
+      - ./workspace:/workspace
+
+  mcp_calendar:
+    build:
+      context: ./mcp-server-calendar
+      dockerfile: Dockerfile
+    environment:
+      - AGENT_WORKSPACE=/workspace
+      - MCP_HOST=0.0.0.0
+      - MCP_PORT=3000
+    volumes:
+      - ./workspace:/workspace
+    ports:
+      - "127.0.0.1:3000:3000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:3000/health\")' || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  qdrant_init:
+    build:
+      context: .
+      dockerfile: Containerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - INNKUBE_ACCESS_TOKEN=${INNKUBE_ACCESS_TOKEN}
+    volumes:
+      - ./workspace:/workspace
+    entrypoint: []
+    command: ["python3", "/app/scripts/init_qdrant.py"]
+    depends_on:
+      qdrant:
+        condition: service_started
+
+  agent:
+    build:
+      context: .
+      dockerfile: Containerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - INNKUBE_ACCESS_TOKEN=${INNKUBE_ACCESS_TOKEN}
+      - OPENAI_BASE_URL=http://mitmproxy:8080/
+      - AGENT_WORKSPACE=/workspace
+      # mcp_calendar is reachable only on the internal compose network, so
+      # cleartext http:// to it is permitted. Remote hosts still require https.
+      - MCP_ALLOW_INSECURE_HTTP_HOSTS=mcp_calendar
+    volumes:
+      - ./workspace:/workspace
+    ports:
+      # Prometheus scrape endpoint (config.yaml metrics.port)
+      - "127.0.0.1:9464:9464"
+    stdin_open: true
+    tty: true
+    depends_on:
+      workspace_init:
+        condition: service_completed_successfully
+      mitmproxy:
+        condition: service_healthy
+      qdrant_init:
+        condition: service_completed_successfully
+      mcp_calendar:
+        condition: service_healthy
+
+  mitmproxy:
+    image: mitmproxy/mitmproxy:latest
+    command:
+      - mitmweb
+      - --mode
+      - reverse:https://${TARGET_HOST:-llms.innkube.fim.uni-passau.de}
+      - --set
+      - hardump=/har-output/traffic.har
+      - --set
+      - termlog_verbosity=info
+      - --listen-host
+      - 0.0.0.0
+      - --listen-port
+      - "8080"
+      - --web-host
+      - 0.0.0.0
+      - --web-port
+      - "9091"
+      - -s
+      - /home/mitmproxy/addons/sse_streaming_har.py
+    environment:
+      TARGET_HOST: ${TARGET_HOST:-llms.innkube.fim.uni-passau.de}
+    ports:
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:9091:9091"
+    volumes:
+      - ./har-output:/har-output
+      - ./mitmproxy/config.yaml:/home/mitmproxy/.mitmproxy/config.yaml:ro
+      - ./mitmproxy/addons:/home/mitmproxy/addons:ro
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8080\")' || exit 0"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:v1.19.1
+    ports:
+      - "127.0.0.1:6333:6333"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    extra_hosts:
+      # Lets Prometheus scrape an agent started directly on the host
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.7.7
+    command:
+      - -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - loki_data:/loki
+    restart: unless-stopped
+
+  # Tails the agent's JSON log file into Loki. The agent logs to a file rather
+  # than stdout (so records don't interleave with the transcript), which is why
+  # this reads ./workspace instead of the container's log stream.
+  alloy:
+    image: grafana/alloy:v1.19.2
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    ports:
+      - "127.0.0.1:12345:12345"
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - ./workspace:/workspace:ro
+      - alloy_data:/var/lib/alloy/data
+    depends_on:
+      loki:
+        condition: service_started
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/agent-metrics.json
+    ports:
+      - "127.0.0.1:3001:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      prometheus:
+        condition: service_started
+      loki:
+        condition: service_started
+    restart: unless-stopped
+
+  sqlite-web:
+    image: coleifer/sqlite-web:latest
+    ports:
+      - "127.0.0.1:8081:8080"
+    volumes:
+      - ./workspace:/data
+    command: ["sqlite_web", "-H", "0.0.0.0", "-x", "/data/.nikola/.memory/memories.db"]
+    restart: unless-stopped
+
+  ready:
+    image: busybox:latest
+    environment:
+      TARGET_HOST: ${TARGET_HOST:-llms.innkube.fim.uni-passau.de}
+    command:
+      - sh
+      - -c
+      - |
+        echo "🔀 Proxying $${TARGET_HOST}"
+        echo ""
+        echo "🔌 Endpoint on http://localhost:8080"
+        echo "🖥️ WebUI on    http://localhost:9091"
+        echo "🧠 Qdrant on   http://localhost:6333"
+        echo "💾 SQLite on   http://localhost:8081"
+        echo "📈 Prometheus  http://localhost:9090"
+        echo "📜 Loki on     http://localhost:3100"
+        echo "📊 Grafana on  http://localhost:3001"
+        echo ""
+        echo "⏹️ Hit CTRL+C to stop and produce HAR file"
+        echo ""
+        echo "✅ Ready"
+    depends_on:
+      mitmproxy:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      mcp_calendar:
+        condition: service_healthy
+      grafana:
+        condition: service_started
+
+volumes:
+  qdrant_storage:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+  alloy_data:

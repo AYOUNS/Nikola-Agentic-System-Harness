@@ -1,0 +1,16 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      # Must match scrape_interval in prometheus/prometheus.yml. Grafana derives
+      # $__rate_interval from this, not from Prometheus — left unset it assumes
+      # 15s and every rate() panel smears its data over a 60s window, which
+      # reads as the dashboard lagging a minute behind the agent.
+      timeInterval: 5s

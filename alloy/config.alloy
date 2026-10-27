@@ -1,0 +1,72 @@
+// Ships the agent's structured log file into Loki.
+//
+// The agent writes one JSON object per line to
+// workspace/.nikola/logs/agent.jsonl (see agent/logging.py). That directory is
+// mounted read-only here and tailed; Alloy keeps its read position in
+// /var/lib/alloy/data, so a restart resumes rather than re-sending.
+//
+// Only `service` and `level` become labels. Loki indexes labels and keeps one
+// stream per combination, so a session id there would create a new stream per
+// run. The identifying fields ride along as structured metadata instead, which
+// is filterable in LogQL without being indexed.
+
+local.file_match "agent_logs" {
+  path_targets = [{
+    "__path__" = "/workspace/.nikola/logs/agent.jsonl",
+    "service"  = "agent",
+  }]
+  sync_period = "5s"
+}
+
+loki.source.file "agent_logs" {
+  targets    = local.file_match.agent_logs.targets
+  forward_to = [loki.process.agent_json.receiver]
+}
+
+loki.process "agent_json" {
+  // Field names match agent/logging.py's JSON formatter. event_type, tool and
+  // run appear on some records only; a missing one extracts as empty and is
+  // dropped rather than failing the line.
+  stage.json {
+    expressions = {
+      "level"      = "level",
+      "logger"     = "logger",
+      "session"    = "session",
+      "run"        = "run",
+      "event_type" = "event_type",
+      "tool"       = "tool",
+      "ts"         = "ts",
+    }
+  }
+
+  // Place each line at the time the agent logged it, not the time Alloy read
+  // it — otherwise a backlog all lands at once on the current timestamp.
+  stage.timestamp {
+    source = "ts"
+    format = "RFC3339Nano"
+  }
+
+  stage.labels {
+    values = {
+      "level" = "level",
+    }
+  }
+
+  stage.structured_metadata {
+    values = {
+      "logger"     = "logger",
+      "session"    = "session",
+      "run"        = "run",
+      "event_type" = "event_type",
+      "tool"       = "tool",
+    }
+  }
+
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

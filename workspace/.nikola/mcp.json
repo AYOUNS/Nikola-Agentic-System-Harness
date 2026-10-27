@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "calendar": {
+      "type": "http",
+      "url": "http://mcp_calendar:3000/mcp",
+      "description": "Calendar management tools - schedule events, find free slots, and manage appointments"
+    },
+    "chrome-devtools": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest", "--slim", "--headless"],
+      "description": "Chrome DevTools integration for web automation, browser interaction, and page inspection"
+    }
+  }
+}

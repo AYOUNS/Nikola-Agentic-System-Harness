@@ -1,0 +1,63 @@
+# Default agent configuration.
+# Do NOT add INNKUBE_ACCESS_TOKEN here — keep it as an environment variable.
+
+llm:
+  model: qwen-agentworld-35b-a3b   # default model
+  embedding_model: octen-embedding-8b  # for memory embeddings
+  available_models:
+    - qwen-agentworld-35b-a3b
+    - gemma4-31b-it
+    - octen-embedding-8b
+  base_url: https://llms.innkube.fim.uni-passau.de/
+  temperature: 0.7
+  timeout_seconds: 60
+
+loop:
+  max_iterations: 100
+  max_tokens: 8192
+
+context:
+  # window_tokens is detected from /v1/models when the endpoint advertises it. The InnKube
+  # gateway does not — it returns only id/object/created/owned_by — so detection there falls
+  # back to 8192. Setting it here overrides detection and skips the lookup at startup.
+  #
+  # 262144 is qwen-agentworld-35b-a3b's native window (256K). If the gateway serves the
+  # model with a lower --max-model-len, requests sized for 256K are rejected rather than
+  # trimmed; the served value is on GET /model/info as model_info.max_input_tokens.
+  window_tokens: 262144
+  reserve_output_tokens: 8192      # Must be >= loop.max_tokens, or a full-length
+                                   # completion overruns the window the input was sized to
+  chars_per_token: 3.5             # Conservative char-to-token ratio (Qwen/Gemma)
+  max_observation_chars: 10000     # Truncate tool observations beyond this limit
+  summary_max_tokens: 1500         # Completion cap for the compaction summary
+  # Reasoning is off for the summary call: this model reasons before writing any answer, so
+  # with it on the cap is spent thinking and the call returns no summary. Set to "" if a
+  # provider rejects the parameter.
+  summary_reasoning_effort: none
+
+workspace: /workspace
+
+logging:
+  # Structured logs are written here as JSON lines, one object per record, so
+  # the terminal shows only the transcript. Read them with jq:
+  #   jq 'select(.level == "ERROR")' <file>
+  #   tail -f <file> | jq .
+  # Defaults to <workspace>/.nikola/logs/agent.jsonl when unset. The file
+  # rotates at 5 MB, keeping 3 older copies. httpx request logging is held at
+  # WARNING unless debug: true, since it duplicates the transcript.
+  enabled: true    # Enable observability logging (hooks)
+  debug: true     # Enable debug-level logging with entry/exit tracking
+  file:            # Log file path (null = default path)
+
+metrics:
+  # Prometheus scrape endpoint (http://<host>:<port>/metrics), fed by PrometheusHook.
+  # The prometheus service in compose.yaml scrapes agent:9464; Grafana reads from it.
+  enabled: true
+  host: 0.0.0.0
+  port: 9464
+
+memory:
+  db_path: /workspace/.agent/memory.db  # SQLite database path (persists across restarts)
+  qdrant:
+    url: http://qdrant:6333  # Qdrant service URL (compose service name)
+    collection: agent_memories  # Collection name for embeddings

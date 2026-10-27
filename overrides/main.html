@@ -1,0 +1,9 @@
+{% extends "base.html.j2" %}
+
+{#-
+  mkdocs-carbon has no `favicon` config key, so the tab icon is injected here.
+  `extrahead` is the theme's designated hook (base.html.j2).
+-#}
+{% block extrahead %}
+  <link rel="icon" type="image/svg+xml" href="{{ 'assets/favicon.svg' | url }}">
+{% endblock %}

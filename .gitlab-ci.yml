@@ -1,0 +1,101 @@
+# GitLab CI/CD Pipeline — AI Engineering Lab Agent
+# Stages: lint (+ docs build check) → test → deploy (GitLab Pages)
+
+stages:
+  - lint
+  - test
+  - deploy
+
+# ── Shared defaults ───────────────────────────────────────────────────────────
+default:
+  image: python:3.12-slim-bookworm
+  before_script:
+    - pip install --quiet --no-cache-dir -r requirements.txt
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  # INNKUBE_ACCESS_TOKEN must be set as a protected CI/CD secret variable
+  # in GitLab → Settings → CI/CD → Variables. Never hardcode it here.
+
+cache:
+  key: "$CI_COMMIT_REF_SLUG"
+  paths:
+    - .cache/pip/
+
+# ── Lint ──────────────────────────────────────────────────────────────────────
+lint:
+  stage: lint
+  script:
+    - pip install --quiet ruff
+    - ruff check agent/ tests/
+
+# ── Unit tests ────────────────────────────────────────────────────────────────
+test:unit:
+  stage: test
+  script:
+    # exit code 5 = no tests collected; treat that as a pass (tests may not exist yet)
+    - pytest tests/unit/ -v --tb=short --junitxml=reports/unit-results.xml || [ $? -eq 5 ]
+  artifacts:
+    when: always
+    reports:
+      junit: reports/unit-results.xml
+    paths:
+      - reports/
+    expire_in: 3 days
+
+# ── E2E tests ─────────────────────────────────────────────────────────────────
+test:e2e:
+  stage: test
+  variables:
+    INNKUBE_ACCESS_TOKEN: $INNKUBE_ACCESS_TOKEN
+  script:
+    - export $(grep -v '^#' .env | xargs) 2>/dev/null || true
+    - pytest tests/e2e/ -v --tb=short --junitxml=reports/e2e-results.xml || [ $? -eq 5 ]
+  artifacts:
+    when: always
+    reports:
+      junit: reports/e2e-results.xml
+    paths:
+      - reports/
+    expire_in: 3 days
+
+# ── Integration tests ─────────────────────────────────────────────────────────
+test:integration:
+  stage: test
+  variables:
+    INNKUBE_ACCESS_TOKEN: $INNKUBE_ACCESS_TOKEN
+  script:
+    - export $(grep -v '^#' .env | xargs) 2>/dev/null || true
+    - pytest tests/integration/ -v --tb=short --junitxml=reports/integration-results.xml || [ $? -eq 5 ]
+  artifacts:
+    when: always
+    reports:
+      junit: reports/integration-results.xml
+    paths:
+      - reports/
+    expire_in: 3 days
+
+# ── Docs build check ──────────────────────────────────────────────────────────
+# Runs everywhere `pages` does not, so a config or link error fails the MR instead
+# of the deploy. Docs deps come from requirements.txt (the shared before_script).
+docs:build:
+  stage: lint
+  script:
+    - mkdocs build --strict --site-dir public
+  artifacts:
+    paths:
+      - public
+    expire_in: 1 day
+  rules:
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+
+# ── GitLab Pages ───────────────────────────────────────────────────────────────
+pages:
+  stage: deploy
+  script:
+    - mkdocs build --strict --site-dir public
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

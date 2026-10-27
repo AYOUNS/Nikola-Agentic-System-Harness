@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nikola-agent"
+version = "0.1.0"
+description = "AI Engineering Lab — ReAct-loop agent harness"
+requires-python = ">=3.12"
+dependencies = [
+    "pyyaml>=6.0.3",
+    "requests>=2.34.2",
+    "typer>=0.27.2",
+    "rich>=15.0.0",
+    "openai>=3.11.0",
+    "prompt-toolkit>=3.0.48",
+    "mcp>=2.2.0",
+    "httpx>=0.28.1",
+    "qdrant-client>=1.19.0",
+    "prometheus-client>=0.26.0",
+]
+
+[project.scripts]
+nikola = "agent.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["agent*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+# Ignore blind exception catching (BLE001) - used intentionally for graceful degradation
+# Ignore try-except-pass in tests (S110) - acceptable in test fixtures
+ignore = ["BLE001", "S110"]

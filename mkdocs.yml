@@ -1,0 +1,110 @@
+site_name: Agent Harness
+site_description: >
+  A terminal-based ReAct agent harness that pairs an LLM with filesystem tools,
+  running inside a container sandbox. Built for the AI Engineering Lab 2026.
+site_author: Group 3
+repo_url: https://git.fim.uni-passau.de/aie/ai-engineering-lab/student-projects-summer-2026/group-3
+repo_name: GitLab
+edit_uri: -/edit/main/docs/
+docs_dir: docs
+site_dir: public
+
+# Internal drafts: kept in the repo, never published.
+exclude_docs: |
+  DOCS_PLAN.md
+  agent_architecture.md
+
+theme:
+  name: carbon
+  custom_dir: overrides
+  prefix: "Group 3"
+  theme_toggle: false
+  theme_default: white         # white | g10 | g90 | g100
+  theme_sidenav: white
+  theme_header: g10
+  header_nav_items:
+    - title: "GitLab"
+      url: "https://git.fim.uni-passau.de/aie/ai-engineering-lab/student-projects-summer-2026/group-3"
+      target: _new
+    - title: "Spec (PDF)"
+      url: "https://studip.uni-passau.de/studip/sendfile.php?type=0&file_id=f8e47f5c8d0067c8b0e1829758def2de&file_name=AI_Engineering_Lab_2026.pdf"
+      target: _new
+    # The theme emits header_nav_items hrefs verbatim (no `| url` filter), so this
+    # is site-root-relative — valid because Pages serves us at the domain root.
+    - title: "Report (PDF)"
+      url: "/Eyouale_Tensae_Degefaw_WrittenReport.pdf"
+      target: _new
+
+extra_css:
+  - stylesheets/carbon-tokens.css
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js
+  - javascripts/mermaid-init.js
+
+markdown_extensions:
+  - toc:
+      permalink: true
+  - admonition
+  - tables
+  - attr_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_div_format
+  - pymdownx.highlight:
+      use_pygments: false
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Configuration: getting-started/configuration.md
+    - Services & Endpoints: getting-started/services.md
+
+  - Concepts:
+    # Week 1 — core loop
+    - Execution Model: concepts/execution-model.md
+    - Tools & Registry: concepts/tools.md
+    - Workspace Sandbox: concepts/workspace.md
+    - Skills: concepts/skills.md
+    - Rules: concepts/rules.md
+    # Week 2 — extensions
+    - MCP Integration: concepts/mcp.md
+    - Long-term Memory: concepts/memory.md
+    # Week 3 — control & delegation
+    - Permissions: concepts/permissions.md
+    - Sub-agents: concepts/subagents.md
+
+  - Architecture:
+    - System Overview: architecture/overview.md
+    - Observability Stack: architecture/observability.md
+
+  - Use Cases:
+    - File Search: use-cases/file-search.md
+    - Calendar Scheduling: use-cases/calendar.md
+    - Parallel Sub-agents: use-cases/parallel-subagents.md
+    - Custom MCP Tool: use-cases/mcp-tool.md
+
+  - Demo: demo.md
+
+  - Testing: testing.md
+
+  - Decisions:
+    - ADR Index: decisions/index.md
+    - "0001 — Permission Rules": decisions/0001-permission-rules.md
+    - "0002 — Sub-agent Auto-deny": decisions/0002-subagent-autodeny.md
+    - "0003 — Memory Split": decisions/0003-memory-split.md
+
+  - About:
+    - About Nikola: about/nikola.md

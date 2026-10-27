@@ -1,0 +1,123 @@
+# permissions.yaml — tool permission rules for THIS workspace.
+#
+# This file is found before the project-root permissions.yaml (the search order is
+# ${WORKSPACE}/.nikola/permissions.yaml → ./permissions.yaml →
+# ~/.nikola/permissions.yaml), so editing it changes policy without rebuilding the
+# image: the workspace is bind-mounted at /workspace, while the project root lives at
+# /app inside the container. Delete this file to fall back to the project-root policy.
+#
+# The path matters: only .nikola/permissions.yaml is read. Moving this file up to the
+# workspace root does not relocate the policy — it silently disables it.
+#
+# It starts as a copy of the project-root policy, so simply adding it changes
+# nothing until you edit it.
+#
+# Rules are evaluated top-to-bottom; the FIRST matching rule wins.
+# Three outcomes:
+#   allow  — tool runs immediately, no prompt.  The user can also pick
+#             "Yes, don't ask again" at a prompt to auto-approve for the session.
+#   deny   — tool is blocked; the agent receives an error message telling it
+#             the denial is final, so it does not retry the identical call.
+#   ask    — user is prompted on EVERY call.  Picking "Yes, don't ask again"
+#             has no effect for ask-policy tools — require-user-confirmation
+#             means every invocation, not just the first.
+#             To permanently allow an ask tool, move it to an allow rule here.
+#
+# NOTE: this file is read once, at startup. Changes need a restart.
+#
+# default: action taken when no rule matches (ask = safest fallback).
+
+default: ask
+
+rules:
+  # ── Read-only tools: always allow ─────────────────────────────────────────
+  - tool: read_file
+    action: allow
+
+  - tool: list_files
+    action: allow
+
+  - tool: search_text
+    action: allow
+
+  - tool: glob
+    action: allow
+
+  - tool: grep
+    action: allow
+
+  - tool: search_memory
+    action: allow
+
+  # ── Sensitive paths: deny writes regardless of other rules ─────────────────
+  # These must appear BEFORE the generic write_file / modify_file ask rules
+  # so they match first (first-match-wins).
+  - tool: write_file
+    path_pattern: "*.env"
+    action: deny
+
+  - tool: write_file
+    path_pattern: ".env*"
+    action: deny
+
+  - tool: write_file
+    path_pattern: "*secret*"
+    action: deny
+
+  - tool: modify_file
+    path_pattern: "*.env"
+    action: deny
+
+  - tool: modify_file
+    path_pattern: ".env*"
+    action: deny
+
+  # This file decides what the agent may do, and the agent can write inside the
+  # workspace — deny writes to it so a session cannot rewrite its own policy for
+  # the next startup.
+  - tool: write_file
+    path_pattern: "*permissions.yaml"
+    action: deny
+
+  - tool: modify_file
+    path_pattern: "*permissions.yaml"
+    action: deny
+
+  - tool: search_and_replace
+    path_pattern: "*permissions.yaml"
+    action: deny
+
+  # ── Write tools: require confirmation on every call ────────────────────────
+  - tool: write_file
+    action: ask
+
+  - tool: create_file
+    action: ask
+
+  - tool: modify_file
+    action: ask
+
+  - tool: search_and_replace
+    action: ask
+
+  - tool: create_folder
+    action: ask
+
+  - tool: remember
+    action: ask
+
+  # ── Delegation: allow parent agent to spawn sub-agents ────────────────────
+  - tool: delegate
+    action: allow
+
+  - tool: delegate_parallel
+    action: allow
+
+  # ── Dangerous tools: always deny ──────────────────────────────────────────
+  - tool: execute_command
+    action: deny
+
+  # ── MCP tools: deny by default; explicitly allow trusted servers ──────────
+  # Uncomment and adjust to allow specific MCP servers.
+  - tool: "mcp_calendar__*"
+    action: ask

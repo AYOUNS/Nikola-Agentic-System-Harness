@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="nikola">
+  <rect width="64" height="64" rx="14" fill="#212529"/>
+  <g fill="none" stroke-linecap="round" transform="translate(32 32) scale(0.46) translate(-51 -51)">
+    <path d="M8,22 C32,22 44,39 64,41 L94,41" stroke="#ffffff" stroke-width="7"/>
+    <path d="M8,50 L94,50" stroke="#1971c2" stroke-width="9"/>
+    <path d="M8,78 C32,78 44,62 64,60 L94,60" stroke="#2f9e44" stroke-width="11"/>
+  </g>
+</svg>
